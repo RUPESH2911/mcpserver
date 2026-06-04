@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ resource_type }}/{{ resource_id }} - FHIR Resource</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-file-code"></i>
+                    <h1>{{ resource_type }}/{{ resource_id }}</h1>
+                </div>
+                <div class="nav-links">
+                    <a href="{{ url_for('index') }}" class="nav-link">
+                        <i class="fas fa-home"></i> Home
+                    </a>
+                    <a href="{{ url_for('view_fhir_resources') }}" class="nav-link">
+                        <i class="fas fa-arrow-left"></i> Back to Resources
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="resource-detail-section">
+                <div class="section-header">
+                    <h2>
+                        <i class="fas fa-{{ 'user' if resource_type == 'Patient' else 'clipboard-list' if resource_type == 'Observation' else 'file-medical' }}"></i>
+                        {{ resource_type }} Resource Details
+                    </h2>
+                </div>
+                
+                <div class="json-viewer">
+                    <div class="json-header">
+                        <h3>JSON Representation</h3>
+                        <button onclick="copyToClipboard()" class="copy-btn">
+                            <i class="fas fa-copy"></i> Copy JSON
+                        </button>
+                    </div>
+                    <pre id="json-content"><code>{{ resource | tojson(indent=2) }}</code></pre>
+                </div>
+
+                {% if resource_type == 'Patient' %}
+                <div class="resource-summary">
+                    <h3>Patient Summary</h3>
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <strong>ID:</strong> {{ resource.id }}
+                        </div>
+                        <div class="summary-item">
+                            <strong>Name:</strong> 
+                            {% if resource.name and resource.name|length > 0 %}
+                                {{ resource.name[0].given|join(' ') if resource.name[0].given else '' }} {{ resource.name[0].family if resource.name[0].family else '' }}
+                            {% else %}
+                                Unknown
+                            {% endif %}
+                        </div>
+                        <div class="summary-item">
+                            <strong>Gender:</strong> {{ resource.gender|default('Unknown') }}
+                        </div>
+                        <div class="summary-item">
+                            <strong>Active:</strong> {{ 'Yes' if resource.active else 'No' }}
+                        </div>
+                        {% if resource.identifier %}
+                        <div class="summary-item">
+                            <strong>Identifiers:</strong>
+                            {% for identifier in resource.identifier %}
+                                <div>{{ identifier.system }}: {{ identifier.value }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% elif resource_type == 'Observation' %}
+                <div class="resource-summary">
+                    <h3>Observation Summary</h3>
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <strong>ID:</strong> {{ resource.id }}
+                        </div>
+                        <div class="summary-item">
+                            <strong>Status:</strong> {{ resource.status }}
+                        </div>
+                        <div class="summary-item">
+                            <strong>Code:</strong> {{ resource.code.text if resource.code.text else resource.code.coding[0].display if resource.code.coding else 'Unknown' }}
+                        </div>
+                        <div class="summary-item">
+                            <strong>Patient:</strong> {{ resource.subject.reference if resource.subject else 'Unknown' }}
+                        </div>
+                        <div class="summary-item">
+                            <strong>Effective Date:</strong> {{ resource.effectiveDateTime if resource.effectiveDateTime else 'Unknown' }}
+                        </div>
+                        {% if resource.valueString %}
+                        <div class="summary-item full-width">
+                            <strong>Value:</strong>
+                            <div class="text-content">{{ resource.valueString }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% elif resource_type == 'DiagnosticReport' %}
+                <div class="resource-summary">
+                    <h3>Diagnostic Report Summary</h3>
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <strong>ID:</strong> {{ resource.id }}
+                        </div>
+                        <div class="summary-item">
+                            <strong>Status:</strong> {{ resource.status }}
+                        </div>
+                        <div class="summary-item">
+                            <strong>Category:</strong> 
+                            {% if resource.category and resource.category[0].coding %}
+                                {{ resource.category[0].coding[0].display }}
+                            {% else %}
+                                Unknown
+                            {% endif %}
+                        </div>
+                        <div class="summary-item">
+                            <strong>Code:</strong> {{ resource.code.text if resource.code.text else resource.code.coding[0].display if resource.code.coding else 'Unknown' }}
+                        </div>
+                        <div class="summary-item">
+                            <strong>Patient:</strong> {{ resource.subject.reference if resource.subject else 'Unknown' }}
+                        </div>
+                        <div class="summary-item">
+                            <strong>Effective Date:</strong> {{ resource.effectiveDateTime if resource.effectiveDateTime else 'Unknown' }}
+                        </div>
+                        <div class="summary-item">
+                            <strong>Issued:</strong> {{ resource.issued if resource.issued else 'Unknown' }}
+                        </div>
+                        {% if resource.conclusion %}
+                        <div class="summary-item full-width">
+                            <strong>Report Content:</strong>
+                            <div class="report-content">
+                                {% set lines = resource.conclusion.split('\n') %}
+                                {% for line in lines %}
+                                    {% if '=== DISCHARGE SUMMARY ===' in line %}
+                                        <div class="discharge-summary-header">{{ line }}</div>
+                                    {% elif line.startswith('FINDINGS:') or line.startswith('IMPRESSION:') or line.startswith('RECOMMENDATIONS:') or line.startswith('DIAGNOSES:') or line.startswith('PROCEDURES:') or line.startswith('ADDITIONAL NOTES:') %}
+                                        <div class="section-header">{{ line }}</div>
+                                    {% elif line.strip() %}
+                                        <div class="report-line">{{ line }}</div>
+                                    {% else %}
+                                        <br>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if resource.presentedForm %}
+                        <div class="summary-item full-width">
+                            <strong>Attached Documents:</strong>
+                            <div class="presented-forms">
+                                {% for form in resource.presentedForm %}
+                                <div class="form-item">
+                                    <div class="form-title">
+                                        <i class="fas fa-file-text"></i>
+                                        {{ form.title }}
+                                    </div>
+                                    {% if form.data %}
+                                    <button class="decode-btn" onclick="decodeAndShow('{{ form.data }}', '{{ form.title }}')">
+                                        <i class="fas fa-eye"></i> View Content
+                                    </button>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyToClipboard() {
+            const jsonContent = document.getElementById('json-content').textContent;
+            navigator.clipboard.writeText(jsonContent).then(function() {
+                const btn = document.querySelector('.copy-btn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                btn.style.backgroundColor = '#48bb78';
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.backgroundColor = '';
+                }, 2000);
+            });
+        }
+
+        function decodeAndShow(encodedData, title) {
+            try {
+                const decodedContent = atob(encodedData);
+                const modal = document.createElement('div');
+                modal.className = 'modal-overlay';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3><i class="fas fa-file-text"></i> ${title}</h3>
+                            <button class="close-btn" onclick="closeModal()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <pre class="decoded-content">${decodedContent}</pre>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="copy-decoded-btn" onclick="copyDecodedContent('${decodedContent}')">
+                                <i class="fas fa-copy"></i> Copy Content
+                            </button>
+                            <button class="close-modal-btn" onclick="closeModal()">
+                                <i class="fas fa-times"></i> Close
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            } catch (e) {
+                alert('Error decoding content: ' + e.message);
+            }
+        }
+
+        function closeModal() {
+            const modal = document.querySelector('.modal-overlay');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        function copyDecodedContent(content) {
+            navigator.clipboard.writeText(content).then(function() {
+                const btn = document.querySelector('.copy-decoded-btn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                btn.style.backgroundColor = '#48bb78';
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.backgroundColor = '';
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+MSH|^~\&|HIS|RIH|CATH|RIH|199904140038||ADT^A01|12345|P|2.5
+PID|1||98.12.21^^^MR^MRN||SMITH^JOHN^MIDDLENAME||19801201|M|||123 MAIN ST^^BOSTON^MA^02101||617-555-1234
+OBX|1|TX|18748-4^Diagnostic imaging study^LN||Chest X-ray shows clear lung fields. Heart size is within normal limits. No acute cardiopulmonary abnormalities detected.||||||F
+OBX|2|TX|18748-4^Diagnostic imaging study^LN||Lungs appear well-expanded and clear bilaterally. Cardiac silhouette is normal in size and configuration.||||||F
+NTE|1||Additional clinical notes: Patient presented with mild chest discomfort. Imaging performed to rule out pneumonia.

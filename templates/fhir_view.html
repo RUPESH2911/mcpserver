@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}FHIR Resources{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-4">FHIR Resources for Patient <span class="text-primary">{{ patient_id }}</span></h2>
+
+  {% set sections = [
+    ("ImagingStudy", "Imaging Studies"),
+    ("DiagnosticReport", "Diagnostic Reports"),
+    ("Observation", "Observations"),
+    ("Procedure", "Procedures"),
+    ("MedicationRequest", "Medication Requests"),
+    ("MedicationStatement", "Medication Statements")
+  ] %}
+
+  {% for type, label in sections %}
+    <section class="mb-5 p-4 bg-white rounded shadow-sm">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h4 class="mb-0">{{ label }} <span class="badge bg-secondary">{{ resources[type]|length if resources[type] is defined else 0 }}</span></h4>
+      </div>
+
+      {% if type == 'ImagingStudy' %}
+        {% if resources[type] is defined and resources[type]|length > 0 %}
+          <div class="row g-4">
+            {% for study in resources[type] %}
+              <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                  <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                      <h6 class="card-title mb-0">Study #{{ study.id }}</h6>
+                    </div>
+                    <div class="d-flex flex-row flex-wrap">
+                      {% for series in study.series_previews %}
+                        <div class="me-3 mb-3 text-center">
+                          <div class="small text-muted">Series: {{ series.series_uid }}</div>
+                          <img src="{{ series.preview_url }}" alt="Preview {{ series.series_uid }}" class="img-thumbnail" style="width: 160px; height: auto;" />
+                        </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-muted">No records</div>
+        {% endif %}
+      {% else %}
+        {% if resources[type] is defined and resources[type]|length > 0 %}
+          <div class="row g-4">
+            {% for item in resources[type] %}
+              <div class="col-12 col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-sm">
+                  <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                      <div class="me-2 text-primary" style="font-size: 1.1rem;">📄</div>
+                      <h6 class="card-title mb-0">{{ item.id or loop.index }}</h6>
+                    </div>
+                    <div class="mb-1"><strong>Status:</strong> {{ item.status or 'unknown' }}</div>
+                    <div class="mb-1"><strong>Code:</strong> {{ item.code_text or 'N/A' }}</div>
+                    {% if item.date %}
+                      <div class="mb-1"><strong>Date:</strong> {{ item.date }}</div>
+                    {% endif %}
+                    <div class="mb-1"><strong>Patient:</strong> {{ item.patient_ref or ('Patient/' ~ patient_id) }}</div>
+                    {% if item.summary %}
+                      <div class="mb-3"><strong>Summary:</strong><br/> {{ item.summary[:180] ~ ('…' if item.summary|length > 180 else '') }}</div>
+                    {% endif %}
+                    <a href="{{ url_for('view_single_fhir_resource', resource_type=type, resource_id=item.id) }}" class="btn btn-primary">
+                      <span class="me-1">👁️</span> View Details
+                    </a>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-muted">No records</div>
+        {% endif %}
+      {% endif %}
+    </section>
+  {% endfor %}
+</div>
+{% endblock %}

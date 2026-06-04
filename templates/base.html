@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}FHIR Resource Viewer{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div class="container py-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </div>
+    <!-- Upload success modal -->
+<div class="modal fade" id="uploadSuccessModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Upload & Conversion Successful</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="uploadSuccessModalBody"></div>
+      <div class="modal-footer">
+        <a href="/fhir-resources" id="viewResourcesBtn" class="btn btn-primary">View Resources</a>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Toast fallback -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+  <div id="uploadSuccessToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="5000">
+    <div class="toast-header">
+      <strong class="me-auto">Success</strong>
+      <button type="button" class="btn-close ms-2 mb-1" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+    <div class="toast-body" id="uploadSuccessToastBody"></div>
+  </div>
+</div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+  const flash = document.getElementById('flash-data');
+  if (!flash) return;
+  const message = flash.getAttribute('data-message') || '';
+  document.getElementById('uploadSuccessModalBody').textContent = message;
+  document.getElementById('uploadSuccessToastBody').textContent = message;
+  try {
+    const modalEl = document.getElementById('uploadSuccessModal');
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+    setTimeout(() => { modal.hide(); }, 6000);
+    setTimeout(() => {
+      const toastEl = document.getElementById('uploadSuccessToast');
+      const toast = new bootstrap.Toast(toastEl);
+      toast.show();
+    }, 6200);
+  } catch(e) {
+    const toastEl = document.getElementById('uploadSuccessToast');
+    const toast = new bootstrap.Toast(toastEl);
+    toast.show();
+  }
+});
+</script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

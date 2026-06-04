@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GEHE MCP Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+          <div class="header-content">
+            <div class="logo">
+              <i class="fas fa-heartbeat"></i>
+              <h1>GEHE MCP Dashboard</h1>
+            </div>
+            <div class="nav-links">
+              <a href="{{ url_for('view_fhir_resources') }}" class="nav-link">
+                <i class="fas fa-fire"></i> View FHIR Resources
+              </a>
+            </div>
+            <div class="status-indicator">
+              <span class="status-dot"></span>
+              <span class="status-text">System Online</span>
+            </div>
+          </div>
+        </header>
+
+        <!-- 3D Loading Spinner and Progress Bar (hidden by default, shown on form submit) -->
+        <div id="conversion-progress-3d" style="display:none; flex-direction:column; align-items:center; margin-bottom:24px;">
+            <div class="spinner-3d-progress">
+                <svg width="64" height="64" viewBox="0 0 64 64">
+                    <circle cx="32" cy="32" r="28" fill="#f7fafc" stroke="#e2e8f0" stroke-width="6"/>
+                    <circle id="progress-arc" cx="32" cy="32" r="28" fill="none" stroke="#667eea" stroke-width="6" stroke-linecap="round" stroke-dasharray="176" stroke-dashoffset="176"/>
+                </svg>
+                <div class="spinner-3d-inner"></div>
+            </div>
+            <div class="progress-label">Uploading... <span id="progress-percent">0%</span></div>
+        </div>
+        <style>
+        .spinner-3d-progress {
+            position: relative;
+            width: 64px;
+            height: 64px;
+            margin-bottom: 10px;
+        }
+        .spinner-3d-inner {
+            position: absolute;
+            top: 8px; left: 8px; right: 8px; bottom: 8px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 24px 0 rgba(102,126,234,0.15), 0 1.5px 0 #fff inset;
+            animation: spin 1.2s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .progress-label {
+            color: #4a5568;
+            font-weight: 600;
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
+        }
+        </style>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var form = document.querySelector('form');
+            if(form) {
+                form.addEventListener('submit', function(e) {
+                    var spinner = document.getElementById('conversion-progress-3d');
+                    if(spinner) spinner.style.display = 'flex';
+                    var percent = document.getElementById('progress-percent');
+                    var arc = document.getElementById('progress-arc');
+                    if(percent) percent.textContent = '0%';
+                    if(arc) arc.setAttribute('stroke-dashoffset', 176);
+                    // Simulate progress (for demo, since real progress is not available client-side)
+                    let p = 0;
+                    let interval = setInterval(function() {
+                        if(p < 95) {
+                            p += Math.floor(Math.random()*5)+1;
+                            if(p > 95) p = 95;
+                            percent.textContent = p+'%';
+                            if(arc) arc.setAttribute('stroke-dashoffset', 176 - (176 * p / 100));
+                        }
+                        else {
+                            clearInterval(interval);
+                            percent.textContent = '95%';
+                            if(arc) arc.setAttribute('stroke-dashoffset', 176 - (176 * 95 / 100));
+                        }
+                    }, 200);
+                });
+            }
+        });
+        </script>
+
+        <div class="main-content">
+          <!-- Show only the last 2 conversion messages -->
+          <div class="messages-container">
+            {% if conversion_results %}
+              {% for msg in conversion_results[-2:] %}
+                {% set conv = conversions[msg['conversion_id']] if conversions and msg['conversion_id'] in conversions else None %}
+                {% if conv %}
+                <div class="alert alert-{{ conv.status }}">
+                  <i class="fas fa-check-circle"></i>
+                  {{ conv.message }}
+                </div>
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+          </div>
+
+          <!-- Upload Section -->
+          <div class="upload-section">
+            <div class="section-header">
+              <h2><i class="fas fa-cloud-upload-alt"></i> Medical Data Upload</h2>
+              <p>Upload DICOM images and patient data files for processing</p>
+            </div>
+
+            <form method="POST" enctype="multipart/form-data" id="uploadForm">
+              <div class="upload-grid">
+                <!-- DICOM Upload -->
+                <div class="upload-card">
+                  <div class="card-header">
+                    <i class="fas fa-x-ray"></i>
+                    <h3>DICOM Images</h3>
+                  </div>
+                  <div class="file-input-wrapper">
+                    <input type="file" name="dicoms" id="dicoms" class="file-input" multiple accept=".dcm,.DCM">
+                    <label for="dicoms" class="file-label">
+                      <i class="fas fa-upload"></i>
+                      <span>Choose DICOM files</span>
+                      <small>Select .dcm files</small>
+                    </label>
+                  </div>
+                  <div class="file-info">
+                    <span class="file-count" id="dicom-count"></span>
+                  </div>
+                </div>
+
+                <!-- Patient Data Upload -->
+                <div class="upload-card">
+                  <div class="card-header">
+                    <i class="fas fa-file-medical-alt"></i>
+                    <h3>Patient Data</h3>
+                  </div>
+                  <div class="file-input-wrapper">
+                    <input type="file" name="hl7data" id="hl7data" class="file-input" multiple accept=".json,.hl7,.txt">
+                    <label for="hl7data" class="file-label">
+                      <i class="fas fa-upload"></i>
+                      <span>Choose patient data files</span>
+                      <small>Select .json, .hl7, or .txt files</small>
+                    </label>
+                  </div>
+                  <div class="file-info">
+                    <span class="file-count" id="hl7-count"></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="process-section">
+                <button type="submit" class="process-btn" id="processBtn">
+                  <i class="fas fa-cogs"></i>
+                  Process Files
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Conversion Status Box -->
+          <div id="conversionBox" class="conversion-box" style="display: none;">
+            <div class="conversion-header">
+              <i class="fas fa-exchange-alt"></i>
+              <h3>HL7 to FHIR Conversion</h3>
+            </div>
+            <div class="conversion-content">
+              <div class="conversion-spinner">
+                <div class="spinner"></div>
+              </div>
+              <div class="conversion-status">
+                <p id="conversionMessage">Converting HL7 data to FHIR format...</p>
+                <div class="conversion-progress">
+                  <div class="progress-bar" id="progressBar"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Success Popup -->
+          <div id="successPopup" class="popup-overlay" style="display: none;">
+            <div class="popup-content success-popup">
+              <div class="popup-header">
+                <i class="fas fa-check-circle"></i>
+                <h3>Conversion Successful!</h3>
+              </div>
+              <div class="popup-body">
+                <p id="successMessage">HL7 data has been successfully converted to FHIR format and uploaded to the server.</p>
+                <div class="conversion-results" id="conversionResults"></div>
+              </div>
+              <div class="popup-footer">
+                <button class="popup-btn" onclick="closeSuccessPopup()">
+                  <i class="fas fa-check"></i>
+                  Continue
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI Status Section -->
+          <div id="ai-status-section" style="margin-bottom: 2em;">
+            <span id="ai-status-badge" style="font-weight:bold; padding:6px 16px; border-radius:16px; background:#e2e8f0; color:#4a5568;">Checking AI status...</span>
+            <span id="ai-status-detail" style="margin-left:1em;"></span>
+          </div>
+          <script>
+          function updateAIStatus() {
+            var badge = document.getElementById("ai-status-badge");
+            var detail = document.getElementById("ai-status-detail");
+            badge.textContent = "Checking AI status...";
+            badge.style.background = '#e2e8f0';
+            badge.style.color = '#4a5568';
+            detail.textContent = "";
+            fetch("/sync-status")
+              .then(r => r.json())
+              .then(data => {
+                if(data.ok) {
+                  badge.textContent = "AI In Use";
+                  badge.style.background = '#c6f6d5';
+                  badge.style.color = '#22543d';
+                  detail.innerHTML = "Synced: " + data.patients + " patients.";
+                } else {
+                  badge.textContent = "AI Not Used";
+                  badge.style.background = '#fed7d7';
+                  badge.style.color = '#822727';
+                  detail.textContent = data.error || "Not synced yet.";
+                }
+              })
+              .catch(e => {
+                badge.textContent = "AI Not Used";
+                badge.style.background = '#fed7d7';
+                badge.style.color = '#822727';
+                detail.textContent = "Sync error: " + e;
+              });
+          }
+          document.addEventListener('DOMContentLoaded', updateAIStatus);
+          </script>
+
+          <!-- AI Search Section -->
+          <div id="ai-search-section" style="margin-bottom:2em;">
+            <form id="ai-search-form" style="display:flex;gap:8px;align-items:center;">
+              <input id="ai-search-input" type="text" placeholder="Ask the agentic AI..." style="flex:1;min-width:200px;padding:8px;border-radius:6px;border:1px solid #cbd5e1;" required />
+              <button type="submit" class="btn btn-primary" style="min-width:100px;">Ask AI</button>
+              <span id="ai-search-spinner" style="display:none;margin-left:8px;"><i class="fa fa-spinner fa-spin"></i></span>
+            </form>
+            <div id="ai-search-result" style="margin-top:10px;font-size:1.1em;color:#4a5568;"></div>
+          </div>
+          <script>
+          document.getElementById('ai-search-form').onsubmit = function(e) {
+            e.preventDefault();
+            var input = document.getElementById('ai-search-input');
+            var spinner = document.getElementById('ai-search-spinner');
+            var result = document.getElementById('ai-search-result');
+            spinner.style.display = 'inline-block';
+            result.innerHTML = '';
+            fetch('/ai-search', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({query: input.value})
+            })
+            .then(r => r.json())
+            .then(data => {
+              spinner.style.display = 'none';
+              if(data.ok) {
+                result.innerHTML = '<div class="ai-output">' + data.ai_html + '</div>';
+                if(data.series_previews && data.series_previews.length > 0) {
+                  let imgs = data.series_previews.map(img =>
+                    `<div class='preview' style='margin:10px 10px 0 0;'>
+          <p>Series: ${img.uid}</p>
+          ${img.url ? `<img src='${img.url}' alt='Preview for ${img.uid}' style='max-width:300px; border:1px solid #e2e8f0; border-radius:8px;'/>` : `<p>Image not available for ${img.uid}</p>`}
+        </div>`
+                  ).join('');
+                  result.innerHTML += imgs;
+                }
+              } else {
+                result.textContent = '❌ ' + (data.error || 'AI error');
+              }
+            })
+            .catch(e => {
+              spinner.style.display = 'none';
+              result.textContent = '❌ AI error: ' + e;
+            });
+          };
+          </script>
+
+          <!-- Info Cards -->
+          <div class="info-grid">
+            <div class="info-card">
+              <div class="info-icon">
+                <i class="fas fa-database"></i>
+              </div>
+              <div class="info-content">
+                <h4>Orthanc PACS</h4>
+                <p>DICOM image storage and retrieval</p>
+                <span class="info-status">Connected</span>
+              </div>
+            </div>
+
+            <div class="info-card">
+              <div class="info-icon">
+                <i class="fas fa-fire"></i>
+              </div>
+              <div class="info-content">
+                <h4>FHIR Server</h4>
+                <p>Healthcare data interoperability</p>
+                <span class="info-status">Online</span>
+              </div>
+            </div>
+
+            <div class="info-card">
+              <div class="info-icon">
+                <i class="fas fa-robot"></i>
+              </div>
+              <div class="info-content">
+                <h4>AI Processing</h4>
+                <p>Automated medical analysis</p>
+                <span class="info-status">Ready</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+    <script>
+      // File count updates
+      document.getElementById('dicoms').addEventListener('change', function(e) {
+        document.getElementById('dicom-count').textContent = '';
+      });
+      document.getElementById('hl7data').addEventListener('change', function(e) {
+        document.getElementById('hl7-count').textContent = '';
+      });
+
+      // Conversion tracking
+      let conversionResults = {{ conversion_results | default('[]') | safe }};
+      
+      if (conversionResults && conversionResults.length > 0) {
+        showConversionBox();
+        trackConversions(conversionResults);
+      }
+
+      function showConversionBox() {
+        document.getElementById('conversionBox').style.display = 'block';
+        document.getElementById('conversionBox').scrollIntoView({ behavior: 'smooth' });
+      }
+
+      function hideConversionBox() {
+        document.getElementById('conversionBox').style.display = 'none';
+      }
+
+      function trackConversions(conversions) {
+        let completedCount = 0;
+        const totalCount = conversions.length;
+        
+        conversions.forEach((conversion, index) => {
+          setTimeout(() => {
+            checkConversionStatus(conversion.conversion_id, conversion.patient_id, conversion.filename, () => {
+              completedCount++;
+              updateProgress(completedCount, totalCount);
+              
+              if (completedCount === totalCount) {
+                setTimeout(() => {
+                  hideConversionBox();
+                  showSuccessPopup(conversions);
+                }, 1000);
+              }
+            });
+          }, index * 500); // Stagger the status checks
+        });
+      }
+
+      function checkConversionStatus(conversionId, patientId, filename, onComplete) {
+        const checkStatus = () => {
+          fetch(`/conversion-status/${conversionId}`)
+            .then(response => response.json())
+            .then data => {
+              document.getElementById('conversionMessage').textContent = 
+                data.message || `Processing ${filename} for Patient ${patientId}...`;
+            
+              if (data.status === 'success' || data.status === 'error' || data.status === 'partial') {
+                onComplete();
+              } else {
+                setTimeout(checkStatus, 1000); // Check again in 1 second
+              }
+            })
+            .catch(error => {
+              console.error('Error checking conversion status:', error);
+              onComplete();
+            });
+        };
+        
+        checkStatus();
+      }
+
+      function updateProgress(completed, total) {
+        const percentage = (completed / total) * 100;
+        document.getElementById('progressBar').style.width = percentage + '%';
+      }
+
+      function showSuccessPopup(conversions) {
+        const resultsContainer = document.getElementById('conversionResults');
+        resultsContainer.innerHTML = conversions.map(c => 
+          `<div class="result-item">
+              <i class="fas fa-check"></i>
+              <span>Patient ${c.patient_id} - ${c.filename}</span>
+            </div>`
+        ).join('');
+        
+        document.getElementById('successPopup').style.display = 'flex';
+      }
+
+      function closeSuccessPopup() {
+        document.getElementById('successPopup').style.display = 'none';
+      }
+
+      // File count display for DICOM and Patient Data
+      function updateFileCount(inputId, labelId) {
+        var input = document.getElementById(inputId);
+        var label = document.getElementById(labelId);
+        if (!input || !label) return;
+        input.addEventListener('change', function() {
+          if (input.files.length === 0) {
+            label.textContent = 'No files selected';
+          } else if (input.files.length === 1) {
+            label.textContent = input.files[0].name;
+          } else {
+            label.textContent = input.files.length + ' files selected';
+          }
+        });
+      }
+      document.addEventListener('DOMContentLoaded', function() {
+        updateFileCount('dicoms', 'dicom-file-label');
+        updateFileCount('hl7data', 'hl7-file-label');
+      });
+
+      {% if upload_success_message %}
+        <div id="flash-data" data-category="success" data-message="{{ upload_success_message|e }}"></div>
+      {% endif %}
+    </script>
+</body>
+</html>

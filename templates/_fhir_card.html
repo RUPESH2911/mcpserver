@@ -1,0 +1,23 @@
+<div class="fhir-card mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <div class="fw-bold text-primary">
+      <i class="bi bi-file-earmark-medical me-1"></i>{{ type|capitalize }} <span class="text-muted">#{{ resource.id }}</span>
+    </div>
+    <span class="badge bg-light text-secondary">{{ resource.status|default('')|capitalize }}</span>
+  </div>
+  <div class="mb-2 small">
+    {% if resource.code_text %}
+      <span class="fhir-label">Code:</span> <span title="{{ resource.code_text }}">{{ resource.code_text[:60] }}{% if resource.code_text|length > 60 %}...{% endif %}</span><br>
+    {% endif %}
+    {% if resource.patient_ref %}
+      <span class="fhir-label">Patient:</span> {{ resource.patient_ref }}<br>
+    {% endif %}
+    {% if resource.date %}
+      <span class="fhir-label">Date:</span> {{ resource.date }}<br>
+    {% endif %}
+    {% if resource.summary %}
+      <span class="fhir-label">Summary:</span> <span title="{{ resource.summary }}">{{ resource.summary[:80] }}{% if resource.summary|length > 80 %}...{% endif %}</span><br>
+    {% endif %}
+  </div>
+  <a href="{{ 'http://localhost:8080/fhir/' ~ type ~ '/' ~ resource.id }}" target="_blank" class="btn btn-primary w-100">View Details</a>
+</div>

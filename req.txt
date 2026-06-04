@@ -1,0 +1,5 @@
+dicomweb-client
+pydicom
+matplotlib
+requests
+pillow

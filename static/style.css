@@ -1,0 +1,56 @@
+/* FHIR Resource Card Styles */
+.fhir-section {
+  margin: 32px 0 24px 0;
+}
+.fhir-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+@media (min-width: 768px) {
+  .fhir-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.fhir-card {
+  padding: 18px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.fhir-label {
+  font-weight: 500;
+  color: #6c757d;
+  margin-right: 4px;
+}
+.fhir-card .btn-primary {
+  margin-top: 10px;
+  font-weight: 600;
+}
+.fhir-card .text-muted {
+  font-size: 0.97em;
+}
+.img-preview {
+  height: 180px;
+  width: 240px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  background: #f8fafc;
+}
+.series-preview {
+  display: inline-block;
+  margin-right: 18px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+.series-id {
+  font-size: 0.98em;
+  color: #6c757d;
+  margin-bottom: 4px;
+}

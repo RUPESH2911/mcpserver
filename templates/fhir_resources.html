@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FHIR Resources - MedData Portal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Add Bootstrap CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container py-4">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">FHIR Resources</h2>
+        <div>
+          <a href="{{ url_for('index') }}" class="btn btn-outline-primary">Home</a>
+        </div>
+      </div>
+
+      <!-- Patients Section -->
+      <section class="mb-5 p-4 bg-white rounded shadow-sm border border-2 border-secondary">
+        <div class="d-flex align-items-center mb-3">
+          <h4 class="mb-0">Patients <span class="badge bg-secondary">{{ resources.patients|length if resources and resources.patients is defined else 0 }}</span></h4>
+        </div>
+        {% if resources and resources.patients is defined and resources.patients|length > 0 %}
+          <div class="row g-4">
+            {% for p in resources.patients %}
+              <div class="col-12 col-md-6 col-lg-4">
+                <div class="card h-100 border border-2 border-secondary shadow-sm">
+                  <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                      <div class="me-2 text-primary" style="font-size: 1.25rem;">👤</div>
+                      <h6 class="card-title mb-0">{{ p.id or 'Unknown ID' }}</h6>
+                    </div>
+                    <div class="mb-1"><strong>Name:</strong>
+                      {{ (p.name[0].family ~ ' ' ~ (p.name[0].given|join(' '))) if p.name is defined and p.name|length > 0 else (p.name or 'Unknown') }}</div>
+                    <div class="mb-1"><strong>Gender:</strong> {{ p.gender or 'unknown' }}</div>
+                    <div class="mb-3"><strong>Status:</strong> <span class="badge bg-success">{{ 'Active' if p.active else 'Inactive' }}</span></div>
+                    <a href="{{ url_for('view_single_fhir_resource', resource_type='Patient', resource_id=p.id) }}" class="btn btn-primary">
+                      <span class="me-1">👁️</span> View Details
+                    </a>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-muted">No records</div>
+        {% endif %}
+      </section>
+
+      <!-- Observations Section -->
+      <section class="mb-5 p-4 bg-white rounded shadow-sm border border-2 border-secondary">
+        <div class="d-flex align-items-center mb-3">
+          <h4 class="mb-0">Observations <span class="badge bg-secondary">{{ resources.observations|length if resources and resources.observations is defined else 0 }}</span></h4>
+        </div>
+        {% if resources and resources.observations is defined and resources.observations|length > 0 %}
+          <div class="row g-4">
+            {% for o in resources.observations %}
+              <div class="col-12 col-md-6 col-lg-4">
+                <div class="card h-100 border border-2 border-secondary shadow-sm">
+                  <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                      <div class="me-2 text-primary" style="font-size: 1.25rem;">🧪</div>
+                      <h6 class="card-title mb-0">{{ o.id or loop.index }}</h6>
+                    </div>
+                    <div class="mb-1"><strong>Status:</strong> {{ o.status or 'unknown' }}</div>
+                    <div class="mb-1"><strong>Code:</strong> {{ o.code.text if o.code is defined and o.code.text is defined else (o.code.coding[0].display if o.code is defined and o.code.coding is defined and o.code.coding|length > 0 else 'N/A') }}</div>
+                    <div class="mb-1"><strong>Patient:</strong> {{ o.subject.reference if o.subject is defined else 'N/A' }}</div>
+                    {% if o.valueString is defined and o.valueString %}
+                      <div class="mb-3"><strong>Value:</strong><br/> {{ o.valueString[:140] ~ ('…' if o.valueString|length > 140 else '') }}</div>
+                    {% endif %}
+                    <a href="{{ url_for('view_single_fhir_resource', resource_type='Observation', resource_id=o.id) }}" class="btn btn-primary">
+                      <span class="me-1">👁️</span> View Details
+                    </a>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-muted">No records</div>
+        {% endif %}
+      </section>
+
+      <!-- Diagnostic Reports Section -->
+      <section class="mb-5 p-4 bg-white rounded shadow-sm border border-2 border-secondary">
+        <div class="d-flex align-items-center mb-3">
+          <h4 class="mb-0">Diagnostic Reports <span class="badge bg-secondary">{{ resources.diagnostic_reports|length if resources and resources.diagnostic_reports is defined else 0 }}</span></h4>
+        </div>
+        {% if resources and resources.diagnostic_reports is defined and resources.diagnostic_reports|length > 0 %}
+          <div class="row g-4">
+            {% for r in resources.diagnostic_reports %}
+              <div class="col-12 col-md-6 col-lg-4">
+                <div class="card h-100 border border-2 border-secondary shadow-sm">
+                  <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                      <div class="me-2 text-primary" style="font-size: 1.25rem;">📄</div>
+                      <h6 class="card-title mb-0">{{ r.id or loop.index }}</h6>
+                    </div>
+                    <div class="mb-1"><strong>Status:</strong> {{ r.status or 'unknown' }}</div>
+                    <div class="mb-1"><strong>Code:</strong> {{ r.code.text if r.code is defined and r.code.text is defined else (r.code.coding[0].display if r.code is defined and r.code.coding is defined and r.code.coding|length > 0 else 'N/A') }}</div>
+                    <div class="mb-1"><strong>Patient:</strong> {{ r.subject.reference if r.subject is defined else 'N/A' }}</div>
+                    {% if r.conclusion is defined and r.conclusion %}
+                      <div class="mb-3"><strong>Conclusion:</strong><br/> {{ r.conclusion[:180] ~ ('…' if r.conclusion|length > 180 else '') }}</div>
+                    {% endif %}
+                    <a href="{{ url_for('view_single_fhir_resource', resource_type='DiagnosticReport', resource_id=r.id) }}" class="btn btn-primary">
+                      <span class="me-1">👁️</span> View Details
+                    </a>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-muted">No records</div>
+        {% endif %}
+      </section>
+
+      <!-- Imaging Studies Section -->
+      <section class="mb-5 p-4 bg-white rounded shadow-sm border border-2 border-secondary">
+        <div class="d-flex align-items-center mb-3">
+          <h4 class="mb-0">Imaging Studies <span class="badge bg-secondary">{{ resources.imaging_studies|length if resources and resources.imaging_studies is defined else 0 }}</span></h4>
+        </div>
+        {% if resources and resources.imaging_studies is defined and resources.imaging_studies|length > 0 %}
+          <div class="row g-4">
+            {% for s in resources.imaging_studies %}
+              <div class="col-12">
+                <div class="card border border-2 border-secondary shadow-sm">
+                  <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                      <h6 class="card-title mb-0">{{ s.id or 'Study' }}</h6>
+                      <span class="badge bg-info">{{ s.status or 'available' }}</span>
+                    </div>
+                    <div class="mb-1"><strong>Patient:</strong> {{ s.subject.reference if s.subject is defined else 'N/A' }}</div>
+                    <div class="mb-1"><strong>Started:</strong> {{ s.started or 'N/A' }}</div>
+                    <div class="mb-2"><strong>Series:</strong> {{ s.series|length if s.series is defined else 0 }}</div>
+                    {% if s.series is defined and s.series|length > 0 %}
+                      <div class="small text-muted">
+                        {% for se in s.series[:6] %}
+                          <div>• {{ se.uid or 'Series' }}</div>
+                        {% endfor %}
+                      </div>
+                    {% endif %}
+                    <a href="{{ url_for('view_single_fhir_resource', resource_type='ImagingStudy', resource_id=s.id) }}" class="btn btn-primary mt-2">
+                      <span class="me-1">👁️</span> View Details
+                    </a>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-muted">No records</div>
+        {% endif %}
+      </section>
+
+      <!-- Procedures Section -->
+      <section class="mb-5 p-4 bg-white rounded shadow-sm border border-2 border-secondary">
+        <div class="d-flex align-items-center mb-3">
+          <h4 class="mb-0">Procedures <span class="badge bg-secondary">{{ resources.procedures|length if resources and resources.procedures is defined else 0 }}</span></h4>
+        </div>
+        {% if resources and resources.procedures is defined and resources.procedures|length > 0 %}
+          <div class="row g-4">
+            {% for pr in resources.procedures %}
+              <div class="col-12 col-md-6 col-lg-4">
+                <div class="card h-100 border border-2 border-secondary shadow-sm">
+                  <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                      <div class="me-2 text-primary" style="font-size: 1.25rem;">🛠️</div>
+                      <h6 class="card-title mb-0">{{ pr.id or loop.index }}</h6>
+                    </div>
+                    <div class="mb-1"><strong>Status:</strong> {{ pr.status or 'unknown' }}</div>
+                    <div class="mb-1"><strong>Code:</strong> {{ pr.code.text if pr.code is defined and pr.code.text is defined else (pr.code.coding[0].display if pr.code is defined and pr.code.coding is defined and pr.code.coding|length > 0 else 'N/A') }}</div>
+                    <div class="mb-1"><strong>Patient:</strong> {{ pr.subject.reference if pr.subject is defined else 'N/A' }}</div>
+                    <div class="mb-3"><strong>Performed:</strong> {{ pr.performedDateTime or (pr.performedPeriod.start if pr.performedPeriod is defined else 'N/A') }}</div>
+                    <a href="{{ url_for('view_single_fhir_resource', resource_type='Procedure', resource_id=pr.id) }}" class="btn btn-primary">
+                      <span class="me-1">👁️</span> View Details
+                    </a>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-muted">No records</div>
+        {% endif %}
+      </section>
+
+      <!-- Medication Requests Section -->
+      <section class="mb-5 p-4 bg-white rounded shadow-sm border border-2 border-secondary">
+        <div class="d-flex align-items-center mb-3">
+          <h4 class="mb-0">Medication Requests <span class="badge bg-secondary">{{ resources.medication_requests|length if resources and resources.medication_requests is defined else 0 }}</span></h4>
+        </div>
+        {% if resources and resources.medication_requests is defined and resources.medication_requests|length > 0 %}
+          <div class="row g-4">
+            {% for mr in resources.medication_requests %}
+              <div class="col-12 col-md-6 col-lg-4">
+                <div class="card h-100 border border-2 border-secondary shadow-sm">
+                  <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                      <div class="me-2 text-primary" style="font-size: 1.25rem;">💊</div>
+                      <h6 class="card-title mb-0">{{ mr.id or loop.index }}</h6>
+                    </div>
+                    <div class="mb-1"><strong>Status:</strong> {{ mr.status or 'unknown' }}</div>
+                    <div class="mb-1"><strong>Intent:</strong> {{ mr.intent or 'N/A' }}</div>
+                    <div class="mb-1"><strong>Medication:</strong> {{ mr.medicationCodeableConcept.text if mr.medicationCodeableConcept is defined and mr.medicationCodeableConcept.text is defined else (mr.medicationCodeableConcept.coding[0].display if mr.medicationCodeableConcept is defined and mr.medicationCodeableConcept.coding is defined and mr.medicationCodeableConcept.coding|length > 0 else 'N/A') }}</div>
+                    <div class="mb-1"><strong>Patient:</strong> {{ mr.subject.reference if mr.subject is defined else 'N/A' }}</div>
+                    <div class="mb-3"><strong>Authored On:</strong> {{ mr.authoredOn or 'N/A' }}</div>
+                    <a href="{{ url_for('view_single_fhir_resource', resource_type='MedicationRequest', resource_id=mr.id) }}" class="btn btn-primary">
+                      <span class="me-1">👁️</span> View Details
+                    </a>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-muted">No records</div>
+        {% endif %}
+      </section>
+
+      <!-- Medication Statements Section -->
+      <section class="mb-5 p-4 bg-white rounded shadow-sm border border-2 border-secondary">
+        <div class="d-flex align-items-center mb-3">
+          <h4 class="mb-0">Medication Statements <span class="badge bg-secondary">{{ resources.medication_statements|length if resources and resources.medication_statements is defined else 0 }}</span></h4>
+        </div>
+        {% if resources and resources.medication_statements is defined and resources.medication_statements|length > 0 %}
+          <div class="row g-4">
+            {% for ms in resources.medication_statements %}
+              <div class="col-12 col-md-6 col-lg-4">
+                <div class="card h-100 border border-2 border-secondary shadow-sm">
+                  <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                      <div class="me-2 text-primary" style="font-size: 1.25rem;">💊</div>
+                      <h6 class="card-title mb-0">{{ ms.id or loop.index }}</h6>
+                    </div>
+                    <div class="mb-1"><strong>Status:</strong> {{ ms.status or 'unknown' }}</div>
+                    <div class="mb-1"><strong>Medication:</strong> {{ ms.medicationCodeableConcept.text if ms.medicationCodeableConcept is defined and ms.medicationCodeableConcept.text is defined else (ms.medicationCodeableConcept.coding[0].display if ms.medicationCodeableConcept is defined and ms.medicationCodeableConcept.coding is defined and ms.medicationCodeableConcept.coding|length > 0 else 'N/A') }}</div>
+                    <div class="mb-1"><strong>Patient:</strong> {{ ms.subject.reference if ms.subject is defined else 'N/A' }}</div>
+                    <div class="mb-3"><strong>Effective:</strong> {{ ms.effectiveDateTime or (ms.effectivePeriod.start if ms.effectivePeriod is defined else 'N/A') }}</div>
+                    <a href="{{ url_for('view_single_fhir_resource', resource_type='MedicationStatement', resource_id=ms.id) }}" class="btn btn-primary">
+                      <span class="me-1">👁️</span> View Details
+                    </a>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-muted">No records</div>
+        {% endif %}
+      </section>
+    </div>
+
+    <!-- Add Bootstrap JS and dependencies (optional) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

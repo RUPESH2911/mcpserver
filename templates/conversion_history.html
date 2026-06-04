@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Conversion History</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <h1>Conversion History</h1>
+                </div>
+                <div class="nav-links">
+                    <a href="{{ url_for('index') }}" class="nav-link">Home</a>
+                </div>
+            </div>
+        </div>
+        <div class="main-content">
+            <h2>HL7 to FHIR Conversion History</h2>
+            {% if conversions %}
+            <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                    <tr>
+                        <th style="border-bottom:1px solid #ccc;">Status</th>
+                        <th style="border-bottom:1px solid #ccc;">Patient ID</th>
+                        <th style="border-bottom:1px solid #ccc;">Filename</th>
+                        <th style="border-bottom:1px solid #ccc;">Message</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for cid, conv in conversions.items() %}
+                    <tr>
+                        <td>{{ conv.status }}</td>
+                        <td>{{ conv.patient_id }}</td>
+                        <td>{{ conv.filename }}</td>
+                        <td>{{ conv.message }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>No conversion history found.</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

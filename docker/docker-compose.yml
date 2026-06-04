@@ -1,0 +1,19 @@
+
+version: "3.8"
+services:
+  orthanc:
+    image: jodogne/orthanc-plugins
+    ports:
+      - "8042:8042"
+      - "4242:4242"
+    environment:
+      ORTHANC__NAME: "Orthanc"
+      ORTHANC__AUTHENTICATION_ENABLED: "true"
+      ORTHANC__REGISTERED_USERS__orthanc: "orthanc"
+      ORTHANC__DICOM_WEB__ENABLE: "true"
+      ORTHANC__DICOM_WEB__ROOT: "/dicom-web/"
+
+  fhir:
+    image: hapiproject/hapi:latest
+    ports:
+      - "8080:8080"

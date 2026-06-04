@@ -1,0 +1,8 @@
+MSH|^~\&|HIS|RIH|CATH|RIH|20250807140038||ORU^R01|MSG001|P|2.5
+PID|1||98.12.21^^^MR^MRN||DOE^JANE^MARIE||19850615|F|||456 ELM STREET^^BOSTON^MA^02115||617-555-9876
+OBR|1|ORDER123|RESULT456|36643-5^Chest X-ray^LN|||20250807||||||||||RAD^RADIOLOGY
+OBX|1|TX|18748-4^Diagnostic imaging study^LN||CLINICAL HISTORY: 38-year-old female with productive cough and fever for 3 days.||||||F
+OBX|2|TX|18748-4^Diagnostic imaging study^LN||FINDINGS: Frontal and lateral chest radiographs demonstrate clear lung fields bilaterally.||||||F  
+OBX|3|TX|18748-4^Diagnostic imaging study^LN||Heart size and pulmonary vascularity appear normal. No pleural effusion or pneumothorax.||||||F
+OBX|4|TX|18748-4^Diagnostic imaging study^LN||IMPRESSION: Normal chest radiograph. No evidence of pneumonia or other acute abnormality.||||||F
+NTE|1||Recommend clinical correlation. If symptoms persist, consider CT chest for further evaluation.
